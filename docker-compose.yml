@@ -9,8 +9,8 @@ services:
       POSTGRES_PASSWORD: password
     ports:
       - 5432:5432
-    volumes:
-      - "$HOME/db-data/:/var/lib/postgresql/data"
+    # volumes:
+    #   - "$HOME/db-data/:/var/lib/postgresql/data"
   build-data:
     image: chughto/testmodels:build-data
     environment:
@@ -53,7 +53,16 @@ services:
       PGUSER: root
       PGDATABASE: model-test
       PGPASSWORD: password
+  dash:
+    image: chughto/testmodels:dash
+    environment:
+      PGHOST: db
+      PGUSER: root
+      PGDATABASE: model-test
+      PGPASSWORD: password
+    ports:
+      - 8080:8080
 
-volumes:
-  dbdata:
-    driver: local
+# volumes:
+#   dbdata:
+#     driver: local
