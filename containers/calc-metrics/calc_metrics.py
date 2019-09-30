@@ -179,13 +179,13 @@ join_sql = "SELECT testdata.id, testdata.gold, test_textblob.pred_sent AS textbl
 with connection, connection.cursor() as cursor:
     cursor.execute(join_sql)
     joined_rows = cursor.fetchall()
+with connection, connection.cursor() as cursor:
+    cursor.execute(select_testdata_sql)
+    num_test_rows = cursor.rowcount
 # row have form (id, gold, textblob_pred, textblob_time, random_pred, random_time, vader_pred, vader_time)
 prev_rowcount = -1
-while len(joined_rows) > prev_rowcount:
-    if len(joined_rows) > 0:
-        with connection, connection.cursor() as cursor:
-            cursor.execute(join_sql)
-            sample_row = cursor.fetchone()
+while len(joined_rows) < num_test_rows:
+    if len(joined_rows) > 0 and len(joined_rows) > prev_rowcount:
         print("prev", prev_rowcount, "new", len(joined_rows))
         prev_rowcount = len(joined_rows)
         for row in joined_rows:
@@ -225,6 +225,9 @@ while len(joined_rows) > prev_rowcount:
     with connection, connection.cursor() as cursor:
         cursor.execute(join_sql)
         joined_rows = cursor.fetchall()
+    with connection, connection.cursor() as cursor:
+        cursor.execute(select_testdata_sql)
+        num_test_rows = cursor.rowcount
 
 # accuracy_scores = {'textblob':0, 'flair':0, 'vader':0}
 # precision_scores = {'textblob':0, 'flair':0, 'vader':0}
@@ -246,7 +249,7 @@ print("pop counter", pop_counter)
 print(metrics)
 
 delete_metrics_table_sql = "DROP TABLE IF EXISTS model_metrics CASCADE;"
-create_metrics_table_sql = "CREATE TABLE model_metrics (model TEXT PRIMARY KEY, accuracy float8, precision float8, recall float8, f1 float8, time float8)"
+create_metrics_table_sql = "CREATE TABLE model_metrics (model TEXT PRIMARY KEY, accuracy float8, precision float8, recall float8, f1 float8, time float8);"
 insert_metrics_sql = "INSERT INTO model_metrics (model, accuracy, precision, recall, f1, time) VALUES (%s, %s, %s, %s, %s, %s);"
 
 with connection, connection.cursor() as cursor:
