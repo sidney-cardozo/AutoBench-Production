@@ -2,17 +2,22 @@ version: "3"
 services:
   db:
     image: postgres
-    restart: always
+    # deploy:
+    #   restart_policy:
+    #     condition: any
     environment:
       POSTGRES_USER: root
       POSTGRES_DB: model-test
       POSTGRES_PASSWORD: password
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
     ports:
       - 5432:5432
-    # volumes:
-    #   - "$HOME/db-data/:/var/lib/postgresql/data"
   build-data:
     image: chughto/testmodels:build-data
+    deploy:
+      restart_policy:
+        condition: on-failure
     environment:
       PGHOST: db
       PGUSER: root
@@ -20,20 +25,19 @@ services:
       PGPASSWORD: password
   test-textblob:
     image: chughto/testmodels:textblob
+    deploy:
+      restart_policy:
+        condition: on-failure
     environment:
       PGHOST: db
       PGUSER: root
       PGDATABASE: model-test
       PGPASSWORD: password
-  # test-flair:
-  #   image: chughto/testmodels:flair
-  #   environment:
-  #     PGHOST: db
-  #     PGUSER: root
-  #     PGDATABASE: model-test
-  #     PGPASSWORD: password
   test-vader:
     image: chughto/testmodels:vader
+    deploy:
+      restart_policy:
+        condition: on-failure
     environment:
       PGHOST: db
       PGUSER: root
@@ -41,6 +45,9 @@ services:
       PGPASSWORD: password
   test-random:
     image: chughto/testmodels:random
+    deploy:
+      restart_policy:
+        condition: on-failure
     environment:
       PGHOST: db
       PGUSER: root
@@ -48,6 +55,9 @@ services:
       PGPASSWORD: password
   calc-metrics:
     image: chughto/testmodels:calcmetrics
+    deploy:
+      restart_policy:
+        condition: on-failure
     environment:
       PGHOST: db
       PGUSER: root
@@ -55,6 +65,9 @@ services:
       PGPASSWORD: password
   dash:
     image: chughto/testmodels:dash
+    deploy:
+      restart_policy:
+        condition: any
     environment:
       PGHOST: db
       PGUSER: root
@@ -63,6 +76,6 @@ services:
     ports:
       - 8080:8080
 
-# volumes:
-#   dbdata:
-#     driver: local
+volumes:
+  db-data:
+    driver: local
