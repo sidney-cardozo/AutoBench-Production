@@ -6,6 +6,7 @@ import dash_html_components as html
 import pandas as pd
 import sys
 import time
+import datetime
 import psycopg2
 
 def postgres_test():
@@ -43,6 +44,10 @@ while metrics_data_exists == False:
     time.sleep(10)
 metrics = pd.read_sql_query(select_metricsdata_sql, connection, index_col = "model")
 
+
+select_samples_sql = "SELECT joined_results.id, joined_results.true_label, joined_results.textblob_pred, joined_results.vader_pred, testdata.text FROM joined_results TABLESAMPLE SYSTEM (1) JOIN testdata ON testdata.id = joined_results.id WHERE joined_results.true_label != joined_results.textblob_pred OR joined_results.true_label != joined_results.vader_pred;"
+sample_data = pd.read_sql_query(select_samples_sql, connection, index_col = "id")
+
 connection.close()
 
 # accuracy_scores = {'textblob':0.0, 'random':0.8, 'vader':0.9}
@@ -71,55 +76,57 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div(children=[
-    html.H1(children='Model Performance Metrics'),
+    html.H1(children='AutoBench: Model Performance Metrics'),
 
-    html.Div(children='''
-        Visualizations go here!
-    '''),
+    html.Div(children='Coral Hughto, Insight DE Fellow 2019'),
 
-    dcc.Graph(
-        id='by-model-graph',
-        figure={
-            'data': [
-                {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.accuracy), 'type': 'bar', 'name': 'Accuracy'},
-                {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.precision), 'type': 'bar', 'name': 'Precision'},
-                {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.recall), 'type': 'bar', 'name': 'Recall'},
-                {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.f1), 'type': 'bar', 'name': 'F1 Score'}
-            ],
-            'layout': {
-                'title': 'Metrics by Model'
-            }
-        }
-    ),
+    html.Div(children=['Last updated: ', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), ' PDT']),
 
-    dcc.Graph(
-        id='by-measure-graph',
-        figure={
-            'data': [
-                {'x': list(metrics_by_measure.measure[:-1]), 'y': list(metrics_by_measure.textblob[:-1]), 'type': 'bar', 'name': 'TextBlob'},
-                {'x': list(metrics_by_measure.measure[:-1]), 'y': list(metrics_by_measure.random[:-1]), 'type': 'bar', 'name': 'Random'},
-                {'x': list(metrics_by_measure.measure[:-1]), 'y': list(metrics_by_measure.vader[:-1]), 'type': 'bar', 'name': 'Vader'},
-            ],
-            'layout': {
-                'title': 'Model Performance by Metric'
-            }
-        }
-    ),
+    # html.Div([
+    #     dcc.Graph(
+    #         id='by-model-graph',
+    #         figure={
+    #             'data': [
+    #                 {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.accuracy), 'type': 'bar', 'name': 'Accuracy'},
+    #                 {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.precision), 'type': 'bar', 'name': 'Precision'},
+    #                 {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.recall), 'type': 'bar', 'name': 'Recall'},
+    #                 {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.f1), 'type': 'bar', 'name': 'F1 Score'}
+    #             ],
+    #         'layout': {'title': 'Metrics by Model'}
+    #         }
+    #     ),
+    # ]),
 
-    dcc.Graph(
-        id='time-graph',
-        figure={
-            'data': [
-                {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.time), 'type': 'bar', 'name': 'Time'},
-            ],
-            'layout': {
-                'title': 'Model Run Time'
-            }
-        }
-    ),
+    html.Div([
+        # html.Div([
+            dcc.Graph(
+                id='by-measure-graph',
+                figure={
+                    'data': [
+                        {'x': list(metrics_by_measure.measure[1:-1]), 'y': list(metrics_by_measure.textblob[1:-1]), 'type': 'bar', 'name': 'TextBlob'},
+                        {'x': list(metrics_by_measure.measure[1:-1]), 'y': list(metrics_by_measure.random[1:-1]), 'type': 'bar', 'name': 'Random'},
+                        {'x': list(metrics_by_measure.measure[1:-1]), 'y': list(metrics_by_measure.vader[1:-1]), 'type': 'bar', 'name': 'Vader'},
+                    ],
+                'layout': {'title': 'Model Performance by Metric'}
+                }
+            ),
+        # ]),
 
-    html.H4(children='Test Metrics'),
-    generate_table(metrics_by_model)
+        # html.Div([
+            dcc.Graph(
+                id='time-graph',
+                figure={
+                    'data': [
+                        {'x': list(metrics_by_model.model), 'y': list(metrics_by_model.time), 'type': 'bar', 'name': 'Time'},
+                    ],
+                    'layout': {'title': 'Model Run Time'}
+                }
+            )
+        # ])
+    ], style={'columnCount':2}),
+
+    html.H4(children='Sample texts with incorrect predictions'),
+    generate_table(sample_data.head())
 
 ])
 
