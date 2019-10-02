@@ -17,6 +17,14 @@ def postgres_test():
     except:
         return False
 
+def table_exists(sql_query):
+    try:
+        with connection, connection.cursor() as cursor:
+            cursor.execute(sql_query)
+        return True
+    except:
+        return False
+
 def get_gold_label(gold_rating):
     if gold_rating <= 5:
         gold_label = "Neg"
@@ -92,8 +100,6 @@ connection = psycopg2.connect(user = "root", dbname = "model-test", password = "
 
 # define sql commands
 delete_table_sql = "DROP TABLE IF EXISTS joined_results CASCADE;"
-# create_table_sql = "CREATE TABLE joined_results (id TEXT PRIMARY KEY, true_label TEXT, textblob_pred TEXT, flair_pred TEXT, vader_pred TEXT);"
-# insert_sql = "INSERT INTO joined_results (id, true_label, textblob_pred, flair_pred, vader_pred) VALUES (%s, %s, %s, %s, %s);"
 create_table_sql = "CREATE TABLE joined_results (id TEXT PRIMARY KEY, true_label TEXT, textblob_pred TEXT, random_pred TEXT, vader_pred TEXT);"
 insert_sql = "INSERT INTO joined_results (id, true_label, textblob_pred, random_pred, vader_pred) VALUES (%s, %s, %s, %s, %s);"
 
@@ -102,79 +108,44 @@ with connection, connection.cursor() as cursor:
     cursor.execute(create_table_sql)
     # connection.commit()
 
-select_testdata_sql = "SELECT * FROM testdata;"
-# check that the test data table exists
+exists_testdata_sql = "SELECT EXISTS (SELECT 1 FROM testdata);"
+# check that the testdata table exists
 test_data_exists = False
 while test_data_exists == False:
-    try:
-        with connection, connection.cursor() as cursor:
-            cursor.execute(select_testdata_sql)
-        test_data_exists = True
-    except:
-        test_data_exists = False
+    test_data_exists = table_exists(exists_testdata_sql)
 print("Test table exists!")
 
-select_model1data_sql = "SELECT * FROM test_textblob;"
-# check that the model1 predictions table exists
-model1_data_exists = False
-while model1_data_exists == False:
-    try:
-        with connection, connection.cursor() as cursor:
-            cursor.execute(select_model1data_sql)
-        model1_data_exists = True
-    except:
-        model1_data_exists = False
+exists_textblob_sql = "SELECT EXISTS (SELECT 1 FROM test_textblob);"
+# check that the textblob predictions table exists
+test_textblob_exists = False
+while test_textblob_exists == False:
+    test_textblob_exists = table_exists(exists_textblob_sql)
 print("Textblob table exists!")
 
-# select_model2data_sql = "SELECT * FROM test_flair;"
-# # check that the model1 predictions table exists
-# model2_data_exists = False
-# while model2_data_exists == False:
-#     time.sleep(3)
-#     try:
-#         with connection, connection.cursor() as cursor:
-#             cursor.execute(select_model2data_sql)
-#         model2_data_exists = True
-#     except:
-#         model2_data_exists = False
-# print("Flair table exists!")
-select_model2data_sql = "SELECT * FROM test_random;"
-# check that the model2 predictions table exists
-model2_data_exists = False
-while model2_data_exists == False:
-    time.sleep(3)
-    try:
-        with connection, connection.cursor() as cursor:
-            cursor.execute(select_model2data_sql)
-        model2_data_exists = True
-    except:
-        model2_data_exists = False
+exists_random_sql = "SELECT EXISTS (SELECT 1 FROM test_random);"
+# check that the random predictions table exists
+test_random_exists = False
+while test_random_exists == False:
+    test_random_exists = table_exists(exists_random_sql)
 print("Random table exists!")
 
-select_model3data_sql = "SELECT * FROM test_vader;"
-# check that the model1 predictions table exists
-model3_data_exists = False
-while model3_data_exists == False:
-    try:
-        with connection, connection.cursor() as cursor:
-            cursor.execute(select_model3data_sql)
-        model3_data_exists = True
-    except:
-        model3_data_exists = False
+exists_vader_sql = "SELECT * FROM test_vader;"
+# check that the vader predictions table exists
+test_vader_exists = False
+while test_vader_exists == False:
+    test_vader_exists = table_exists(exists_vader_sql)
 print("Vader table exists!")
 
+select_testdata_sql = "SELECT id FROM testdata;"
+
 # metrics variables
-# true_pos = {'textblob':0, 'flair':0, 'vader':0}
-# true_neg = {'textblob':0, 'flair':0, 'vader':0}
-# pred_pos = {'textblob':0, 'flair':0, 'vader':0}
 run_time = {'textblob':0, 'random':0, 'vader':0}
 true_pos = {'textblob':0, 'random':0, 'vader':0}
 true_neg = {'textblob':0, 'random':0, 'vader':0}
 pred_pos = {'textblob':0, 'random':0, 'vader':0}
 gold_pos = 0
 pop_counter = 0
-# join together testdata and test_textblob tables
-# join_sql = "SELECT testdata.id, testdata.gold, test_textblob.pred_sent AS textblob_pred, test_flair.pred_sent AS flair_pred, test_vader.pred_sent AS vader_pred FROM testdata JOIN test_textblob ON testdata.id = test_textblob.id JOIN test_flair ON testdata.id = test_flair.id JOIN test_vader ON testdata.id = test_vader.id;"
+# join together testdata and model test results tables
 join_sql = "SELECT testdata.id, testdata.gold, test_textblob.pred_sent AS textblob_pred, test_textblob.time AS textblob_time, test_random.pred_sent AS random_pred, test_random.time AS random_time, test_vader.pred_sent AS vader_pred, test_vader.time AS vader_time FROM testdata JOIN test_textblob ON testdata.id = test_textblob.id JOIN test_random ON testdata.id = test_random.id JOIN test_vader ON testdata.id = test_vader.id;"
 with connection, connection.cursor() as cursor:
     cursor.execute(join_sql)
@@ -182,11 +153,11 @@ with connection, connection.cursor() as cursor:
 with connection, connection.cursor() as cursor:
     cursor.execute(select_testdata_sql)
     num_test_rows = cursor.rowcount
-# row have form (id, gold, textblob_pred, textblob_time, random_pred, random_time, vader_pred, vader_time)
+# rows have form (id, gold, textblob_pred, textblob_time, random_pred, random_time, vader_pred, vader_time)
 prev_rowcount = -1
-while len(joined_rows) < num_test_rows:
+while len(joined_rows) <= num_test_rows:
     if len(joined_rows) > 0 and len(joined_rows) > prev_rowcount:
-        print("prev", prev_rowcount, "new", len(joined_rows))
+        print("prev", prev_rowcount, "new", len(joined_rows), "test", num_test_rows)
         prev_rowcount = len(joined_rows)
         for row in joined_rows:
             review_id = row[0]
@@ -204,8 +175,6 @@ while len(joined_rows) < num_test_rows:
                 textblob_pred = get_textblob_label(textblob_rating)
                 pred_pos['textblob'] += textblob_pred[1]
                 run_time['textblob'] += textblob_time
-                # flair_pred = get_flair_label(flair_rating)
-                # pred_pos['flair'] += flair_pred[1]
                 random_pred = get_random_label(random_rating)
                 pred_pos['random'] += random_pred[1]
                 run_time['random'] += random_time
@@ -221,18 +190,15 @@ while len(joined_rows) < num_test_rows:
                             true_pos[model] += 1
                         elif gold_label[0] == "Neg":
                             true_neg[model] += 1
-    time.sleep(30)
-    with connection, connection.cursor() as cursor:
-        cursor.execute(join_sql)
-        joined_rows = cursor.fetchall()
-    with connection, connection.cursor() as cursor:
-        cursor.execute(select_testdata_sql)
-        num_test_rows = cursor.rowcount
+        with connection, connection.cursor() as cursor:
+            cursor.execute(join_sql)
+            joined_rows = cursor.fetchall()
+        with connection, connection.cursor() as cursor:
+            cursor.execute(select_testdata_sql)
+            num_test_rows = cursor.rowcount
+    elif prev_rowcount == num_test_rows:
+        break
 
-# accuracy_scores = {'textblob':0, 'flair':0, 'vader':0}
-# precision_scores = {'textblob':0, 'flair':0, 'vader':0}
-# recall_scores = {'textblob':0, 'flair':0, 'vader':0}
-# f1_scores = {'textblob':0, 'flair':0, 'vader':0}
 accuracy_scores = {'textblob':0, 'random':0, 'vader':0}
 precision_scores = {'textblob':0, 'random':0, 'vader':0}
 recall_scores = {'textblob':0, 'random':0, 'vader':0}
