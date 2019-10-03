@@ -45,7 +45,7 @@ while metrics_data_exists == False:
 metrics = pd.read_sql_query(select_metricsdata_sql, connection, index_col = "model")
 
 
-select_samples_sql = "SELECT joined_results.id, joined_results.true_label, joined_results.textblob_pred, joined_results.vader_pred, testdata.text FROM joined_results TABLESAMPLE SYSTEM (1) JOIN testdata ON testdata.id = joined_results.id WHERE joined_results.true_label != joined_results.textblob_pred OR joined_results.true_label != joined_results.vader_pred;"
+select_samples_sql = "SELECT joined_results.id, joined_results.true_label, joined_results.textblob_pred, joined_results.vader_pred, testdata.text FROM joined_results JOIN testdata ON testdata.id = joined_results.id WHERE joined_results.true_label != joined_results.textblob_pred OR joined_results.true_label != joined_results.vader_pred;"
 sample_data = pd.read_sql_query(select_samples_sql, connection, index_col = "id")
 
 connection.close()
