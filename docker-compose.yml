@@ -2,9 +2,9 @@ version: "3"
 services:
   db:
     image: postgres
-    # deploy:
-    #   restart_policy:
-    #     condition: any
+    deploy:
+      restart_policy:
+        condition: any
     environment:
       POSTGRES_USER: root
       POSTGRES_DB: model-test

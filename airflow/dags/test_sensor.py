@@ -12,11 +12,11 @@ args = {
     'depends_on_past': False,
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
-    'execution_timeout': timedelta(minutes=60),
+    'execution_timeout': timedelta(minutes=10),
 }
 
 dag = DAG(
-    dag_id='s3_sensor_test',
+    dag_id='deploy_stack_on_file_upload',
     schedule_interval=schedule,
     default_args=args,
     catchup=False,
@@ -24,8 +24,8 @@ dag = DAG(
 
 file_sensor = S3KeySensor(
     task_id='s3_key_sensor_task',
-    poke_interval=60 * 2, # seconds
-    timeout=60 * 15, # seconds
+    poke_interval=60 * 1, # seconds
+    timeout=60 * 10, # seconds
     bucket_key="s3://coral-test-bucket/docker-compose.yml",
     bucket_name=None,
     wildcard_match=False,
@@ -62,4 +62,4 @@ deploy_stack = BashOperator(
     dag=dag
 )
 
-file_sensor >> rm_prev_stack >> move_file >> docker_prune >> update_images >> deploy_stack
+file_sensor >> move_file >> rm_prev_stack >> docker_prune >> update_images >> deploy_stack
