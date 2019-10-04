@@ -10,9 +10,9 @@ args = {
     'owner': 'airflow',
     'start_date': datetime(2019, 10, 1),
     'depends_on_past': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-    'execution_timeout': timedelta(minutes=10),
+    'retries': 0,
+    # 'retry_delay': timedelta(minutes=5),
+    # 'execution_timeout': timedelta(minutes=10),
 }
 
 dag = DAG(
@@ -26,7 +26,7 @@ file_sensor = S3KeySensor(
     task_id='s3_key_sensor_task',
     poke_interval=60 * 1, # seconds
     timeout=60 * 10, # seconds
-    bucket_key="s3://coral-test-bucket/docker-compose.yml",
+    bucket_key="s3://auto-bench/docker-compose.yml",
     bucket_name=None,
     wildcard_match=False,
     dag=dag
@@ -34,7 +34,7 @@ file_sensor = S3KeySensor(
 
 move_file = BashOperator(
     task_id="move_yml",
-    bash_command="aws s3 mv s3://coral-test-bucket/docker-compose.yml /home/ec2-user/docker-compose.yml",
+    bash_command="aws s3 mv s3://auto-bench/docker-compose.yml /home/ec2-user/docker-compose.yml",
     dag=dag
 )
 
