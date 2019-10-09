@@ -5,7 +5,7 @@ FROM python:3.7.4-slim
 WORKDIR /app
 
 # Copy the python script into the container at /app
-COPY test_random.py /app
+COPY run_random.py /app
 
 # bash setup
 RUN apt-get update
@@ -18,5 +18,5 @@ RUN pip3 install psycopg2~=2.6
 # Install any needed packages specified in requirements.txt
 #RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
-# Run calc_metrics.py when the container launches
-CMD ["python", "-u", "test_random.py"]
+# Run run_random.py when the container launches
+CMD ["python", "-u", "run_random.py"]

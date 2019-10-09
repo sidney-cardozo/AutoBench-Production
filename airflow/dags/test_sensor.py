@@ -52,7 +52,7 @@ docker_prune = BashOperator(
 
 update_images = BashOperator(
     task_id="update_images",
-    bash_command="docker pull chughto/testmodels -a",
+    bash_command="bash /home/ec2-user/update_docker_images.sh ",
     dag=dag
 )
 
