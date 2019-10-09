@@ -10,49 +10,59 @@ import time
 import datetime
 import psycopg2
 
-def postgres_test():
+### BEGIN FUNCTIONS ###
+
+def ping_postgres_db(db_name):
+    '''Tests whether the given PostgreSQL database is live.'''
     try:
-        connection = psycopg2.connect(user = "root", dbname = "model-test", password = "password")
+        connection = psycopg2.connect(user = "root", dbname = db_name, password = "password")
         connection.close()
         return True
     except:
         return False
 
+def table_exists(table_name):
+    sql_query = "SELECT EXISTS (SELECT 1 FROM "+ table_name + ");"
+    try:
+        with connection, connection.cursor() as cursor:
+            cursor.execute(sql_query)
+        return True
+    except:
+        return False
+
+### END FUNCTIONS ###
+
 time.sleep(120)
 
-print("Testing Database Connection")
-test_connect = postgres_test()
-
-while test_connect == False:
-    test_connect = postgres_test()
-
-print("Connected!")
+print("Waiting for connection to model-test database")
+connected_to_db = False
+while not connected_to_db:
+    connected_to_db = ping_postgres_db("model-test")
+print("Connected to model-test database")
 
 connection = psycopg2.connect(user = "root", dbname = "model-test", password = "password")
 
-select_metricsdata_sql = "SELECT * FROM model_metrics;"
 # check that the model1 predictions table exists
 metrics_data_exists = False
-while metrics_data_exists == False:
-    try:
-        with connection, connection.cursor() as cursor:
-            cursor.execute(select_metricsdata_sql)
-        metrics_data_exists = True
-    except:
-        print("Error:", sys.exc_info()[0])
-        metrics_data_exists = False
-# with connection, connection.cursor() as cursor:
-    time.sleep(10)
-metrics = pd.read_sql_query(select_metricsdata_sql, connection, index_col = "model")
+while not metrics_data_exists:
+    metrics_data_exists = table_exists("model_metrics")
 
+time.sleep(5)
 
-select_samples_sql = "SELECT joined_results.id, joined_results.true_label, joined_results.textblob_pred, joined_results.vader_pred, testdata.text FROM joined_results JOIN testdata ON testdata.id = joined_results.id WHERE joined_results.true_label != joined_results.textblob_pred OR joined_results.true_label != joined_results.vader_pred;"
-sample_data = pd.read_sql_query(select_samples_sql, connection, index_col = "id")
+metrics = pd.read_sql_query("SELECT * FROM model_metrics;", connection, index_col = "model")
+
+select_samples_sql = "SELECT compiled_results.review_id, compiled_results.true_label, compiled_results.textblob_pred, compiled_results.vader_pred, testdata.review_text FROM compiled_results JOIN testdata ON testdata.review_id = compiled_results.review_id WHERE compiled_results.true_label != compiled_results.textblob_pred OR compiled_results.true_label != compiled_results.vader_pred;"
+sample_data = pd.read_sql_query(select_samples_sql, connection, index_col = "review_id")
 
 connection.close()
 
 metrics_by_model = metrics.rename_axis('model').reset_index()
 metrics_by_measure = metrics.T.rename_axis('measure').reset_index()
+
+print(metrics_by_model)
+print(metrics_by_measure)
+
+data_header = ["True Label", "TextBlob Prediction", "Vader Prediction", "Review Text"]
 
 def generate_table(dataframe, header=None, max_rows=10):
     if header != None:
@@ -61,11 +71,13 @@ def generate_table(dataframe, header=None, max_rows=10):
         header = [html.Tr([html.Th(col) for col in dataframe.columns])]
     num_samples = min(len(dataframe), max_rows)
     sample_rows = random.sample(range(len(dataframe)), num_samples)
+    num_samples = min(len(dataframe), max_rows)
+    sample_rows = random.sample(range(len(dataframe)), num_samples)
     body = []
     for i in sample_rows:
         body_contents = []
         for col in dataframe.columns:
-            if col == "text":
+            if col == "review_text":
                 body_contents.append(html.Details([html.Summary('Review Text'), html.Div(dataframe.iloc[i][col])]))
             else:
                 body_contents.append(html.Td(dataframe.iloc[i][col]))
@@ -107,7 +119,7 @@ app.layout = html.Div(children=[
     ], style={'columnCount':2}),
 
     html.H4(children='Sample texts with incorrect predictions'),
-    generate_table(sample_data.head())
+    generate_table(sample_data, data_header, 5)
 
 ])
 
