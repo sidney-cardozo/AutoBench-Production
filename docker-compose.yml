@@ -16,7 +16,7 @@ services:
     ports:
       - 5432:5432
   testdata:
-    image: chughto/autobench:build-data
+    build: ./containers/build_data/
     deploy:
       restart_policy:
         condition: on-failure
@@ -26,7 +26,7 @@ services:
       PGDATABASE: model-test
       PGPASSWORD: password
   textblob:
-    image: chughto/autobench:textblob
+    build: ./containers/textblob_model/
     deploy:
       restart_policy:
         condition: on-failure
@@ -36,7 +36,7 @@ services:
       PGDATABASE: model-test
       PGPASSWORD: password
   vader:
-    image: chughto/autobench:vader
+    build: ./containers/vader_model/
     deploy:
       restart_policy:
         condition: on-failure
@@ -46,7 +46,7 @@ services:
       PGDATABASE: model-test
       PGPASSWORD: password
   random:
-    image: chughto/autobench:random
+    build: ./containers/random_model/
     deploy:
       restart_policy:
         condition: on-failure
@@ -56,7 +56,7 @@ services:
       PGDATABASE: model-test
       PGPASSWORD: password
   calcmetrics:
-    image: chughto/autobench:calcmetrics
+    build: ./containers/calc_metrics/
     deploy:
       restart_policy:
         condition: on-failure
@@ -66,7 +66,7 @@ services:
       PGDATABASE: model-test
       PGPASSWORD: password
   dash:
-    image: chughto/autobench:dash
+    build: ./containers/make_dash/
     deploy:
       placement:
         constraints: [node.role == manager]
