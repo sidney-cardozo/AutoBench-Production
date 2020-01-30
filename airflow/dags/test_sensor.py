@@ -26,7 +26,7 @@ file_sensor = S3KeySensor(
     task_id='s3_key_sensor_task',
     poke_interval=60 * 1, # seconds
     timeout=60 * 10, # seconds
-    bucket_key="s3://auto-bench/docker-compose.yml",
+    bucket_key="s3://bucket-for-autobench/docker-compose.yml",
     bucket_name=None,
     wildcard_match=False,
     dag=dag
@@ -34,7 +34,7 @@ file_sensor = S3KeySensor(
 
 move_file = BashOperator(
     task_id="move_yml",
-    bash_command="aws s3 mv s3://auto-bench/docker-compose.yml /home/ec2-user/docker-compose.yml",
+    bash_command="aws s3 mv s3://bucket-for-autobench/docker-compose.yml /home/ec2-user/docker-compose.yml",
     dag=dag
 )
 
@@ -50,16 +50,10 @@ docker_prune = BashOperator(
     dag=dag
 )
 
-update_images = BashOperator(
-    task_id="update_images",
-    bash_command="bash /home/ec2-user/update_docker_images.sh ",
-    dag=dag
-)
-
 deploy_stack = BashOperator(
     task_id="deploy_stack",
     bash_command="docker stack deploy -c /home/ec2-user/docker-compose.yml AutoBench",
     dag=dag
 )
 
-file_sensor >> move_file >> rm_prev_stack >> docker_prune >> update_images >> deploy_stack
+file_sensor >> move_file >> rm_prev_stack >> docker_prune >> deploy_stack
